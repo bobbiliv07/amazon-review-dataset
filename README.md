@@ -76,7 +76,7 @@ The dataset was initially downloaded in JSON format (hierarchical and semi-struc
 * **Rich DataFrame Ecosystem:** Offers structured PySpark DataFrames that support intuitive, SQL-like data manipulation, filtering, and complex joins.
 * **Scalable Data Ingestion:** Easily reads, parses, and converts unstructured or semi-structured data formats like JSON/JSONL into flattened tables.
 * **Hadoop Integration:** Seamlessly integrates with HDFS storage systems for reliable, fault-tolerant, and localized big data analysis
-
+you can find the usage of pyspark in the pptx file and aswell as in the code file .
 ## Using HDFS for Storage
 
 HDFS (Hadoop Distributed File System) serves as the primary distributed storage system for large-scale data processing, offering:
