@@ -1,105 +1,336 @@
-# Analysis of Amazon Review Dataset Using Big Data Architecture
+# Amazon Review Dataset Analysis Using Big Data Architecture
 
 **Author:** BOBBILI VAMSHI  
+**Project Focus:** Distributed data engineering, PySpark analytics, HDFS, and the Medallion Architecture
 
+## Overview
 
----
+This project analyzes the **Amazon Reviews 1996–2023 dataset** using a scalable big-data workflow. It combines customer reviews with product metadata to identify trends in customer sentiment, product quality, review activity, purchasing signals, and category performance.
 
-## Objective
+The solution is designed to demonstrate how large, semi-structured datasets can be ingested, stored, transformed, and analyzed using **Hadoop HDFS** and **Apache PySpark**. The project also follows the **Medallion Architecture**, separating data into Bronze, Silver, and Gold layers to improve data quality, traceability, and analytical usability.
 
-The main ideology behind this project is to analyze large-scale customer feedback from the Amazon Reviews (1996–2023) dataset using PySpark. The goal is to extract meaningful insights, understand customer sentiments, identify trends, and build data-driven models to support decision-making.
+> **Important:** The dataset contains review and product information. Review counts, ratings, helpful votes, and product metadata should be interpreted as analytical indicators rather than direct sales or revenue measurements.
 
-Additionally, by analyzing 25 years of purchase history from Amazon, this project identifies which products have dominated, sold the most, and made the greatest impact over the years.
+## Project Objectives
 
----
+- Ingest large-scale Amazon review and product metadata files.
+- Store raw data in HDFS using a fault-tolerant distributed storage model.
+- Process semi-structured JSON/JSONL data with PySpark.
+- Clean, validate, standardize, and enrich review and product records.
+- Join reviews with item metadata using `parent_asin`.
+- Produce curated analytical datasets for exploratory analysis and reporting.
+- Identify highly reviewed, highly rated, and influential products and categories.
+- Analyze rating distributions, verified purchases, helpful votes, and review activity over time.
+- Demonstrate an extensible data pipeline based on the Medallion Architecture.
 
-## Architecture Followed
+## Architecture
 
-The project follows a distributed big data architecture workflow:
-1. **Download & Ingest:** Raw review and metadata files are downloaded.
-2. **Data Storage (HDFS):** Data is stored in Hadoop Distributed File System (HDFS) for scalable, fault-tolerant storage.
-3. **Data Processing & Analytics (PySpark):** PySpark is used to process, clean, join, and analyze large datasets.
-4. **Insights & Visualizations:** Key analytics and data insights are extracted from the processed DataFrames.
+The project follows this high-level pipeline:
 
----
+```text
+Amazon Reviews and Metadata
+            |
+            v
+      Data Ingestion
+            |
+            v
+     HDFS Raw Storage
+            |
+            v
+   Bronze Layer - Raw Data
+            |
+            v
+  Silver Layer - Cleaned Data
+            |
+            v
+   Gold Layer - Analytics
+            |
+            v
+ Insights, Reports, and Visualizations
+```
 
-## Data Source & Specifications
+### Technologies Used
+
+| Technology | Purpose |
+| :--- | :--- |
+| **Python** | Scripting, data preparation, and analysis orchestration |
+| **Apache Spark / PySpark** | Distributed processing, transformation, joins, and aggregation |
+| **Hadoop HDFS** | Distributed and fault-tolerant storage for large datasets |
+| **Spark SQL / DataFrames** | Structured querying and analytical transformations |
+| **JSON / JSONL** | Source data format for reviews and product metadata |
+| **Jupyter Notebook / IDE** | Development, experimentation, and analysis |
+
+## Medallion Architecture
+
+The data pipeline is organized into three logical layers. Each layer has a specific responsibility and provides a clear path from raw data to business-ready insights.
+
+### Bronze Layer - Raw Ingestion
+
+The Bronze layer stores the source data with minimal changes. Its purpose is to preserve the original records and provide a reliable source for reprocessing.
+
+Typical Bronze activities include:
+
+- Downloading review and metadata files.
+- Copying source files into HDFS.
+- Preserving the original JSON/JSONL structure.
+- Recording ingestion locations and source versions.
+- Applying only basic parsing or schema inference where required.
+
+Example HDFS locations:
+
+```text
+/user/hadoop/raw_data/reviews/
+/user/hadoop/raw_data/metadata/
+```
+
+### Silver Layer - Cleaned and Integrated Data
+
+The Silver layer contains validated, standardized, and enriched records prepared for analysis.
+
+Typical Silver transformations include:
+
+- Selecting relevant columns.
+- Casting fields to appropriate data types.
+- Converting Unix timestamps into readable dates.
+- Handling null, malformed, or duplicate records.
+- Normalizing rating, price, vote, and Boolean fields.
+- Exploding or flattening nested arrays such as `features`, `categories`, and `images` when required.
+- Joining reviews with product metadata using `parent_asin`.
+- Adding derived fields such as review year, review month, rating group, and purchase-verification indicators.
+
+Example HDFS locations:
+
+```text
+/user/hadoop/silver/reviews_cleaned/
+/user/hadoop/silver/product_metadata_cleaned/
+/user/hadoop/silver/reviews_enriched/
+```
+
+### Gold Layer - Curated Analytics
+
+The Gold layer contains aggregated, business-friendly datasets that can be used for dashboards, reports, visualizations, and downstream machine-learning tasks.
+
+Possible Gold datasets include:
+
+- Product-level review summaries.
+- Category-level rating and review metrics.
+- Yearly and monthly review trends.
+- Verified versus non-verified purchase comparisons.
+- Helpful-vote and review-engagement summaries.
+- Top-rated products with sufficient review volume.
+- Products with the highest number of reviews.
+- Average rating and rating-count comparisons.
+- Price, category, and review-performance summaries.
+
+Example HDFS locations:
+
+```text
+/user/hadoop/gold/product_summary/
+/user/hadoop/gold/category_summary/
+/user/hadoop/gold/time_series_metrics/
+```
+
+## Data Sources
 
 ### Primary Download Source
-* **Official Website:** [McAuley Lab - UCSD Amazon Reviews Dataset](http://jmcauley.ucsd.edu/data/amazon/)
-* **Original Compiler:** Curated by Julian McAuley and colleagues
-* **Version Used:** Amazon Reviews Data and Metadata (2023).
 
-### Data Format
-The dataset was initially downloaded in JSON format (hierarchical and semi-structured). To prepare the data for efficient Exploratory Data Analysis (EDA) and model training, the raw JSON data was converted into a flat, tabular PySpark DataFrame structure.
+- **Dataset:** Amazon Reviews and Metadata Dataset
+- **Source:** [McAuley Lab - UCSD Amazon Reviews Dataset](http://jmcauley.ucsd.edu/data/amazon/)
+- **Original compiler:** Julian McAuley and collaborators
+- **Version used:** Amazon Reviews Data and Metadata, 2023
+- **Coverage:** Review records and product metadata spanning approximately 1996–2023
 
----
+The source data is semi-structured and may contain nested arrays, dictionaries, missing values, and inconsistent fields. The pipeline prepares this data for distributed analysis using Spark DataFrames.
 
-## Schema & Data Fields
+## Data Schema
 
-### 1. User Reviews Data Fields
-| Field | Type | Explanation |
+### User Review Fields
+
+| Field | Type | Description |
 | :--- | :--- | :--- |
-| `rating` | `float` | Rating of the product (from 1.0 to 5.0). |
-| `title` | `str` | Title of the user review. |
-| `text` | `str` | Text body of the user review. |
-| `images` | `list` | List of user-posted images (`small_image_url`, `medium_image_url`, `large_image_url`). |
-| `asin` | `str` | ID of the specific product. |
-| `parent_asin` | `str` | Parent ID of the product (used to join with item metadata). |
-| `user_id` | `str` | ID of the reviewer. |
-| `timestamp` | `int` | Time of the review in Unix epoch time. |
-| `verified_purchase` | `bool` | User purchase verification status. |
-| `helpful_vote` | `int` | Number of helpful votes for the review[. |
+| `rating` | `float` | Product rating from 1.0 to 5.0. |
+| `title` | `string` | Title of the review. |
+| `text` | `string` | Full review text. |
+| `images` | `array` | User-submitted image information. |
+| `asin` | `string` | Identifier of the reviewed product or variation. |
+| `parent_asin` | `string` | Parent product identifier used for metadata joins. |
+| `user_id` | `string` | Reviewer identifier. |
+| `timestamp` | `long` | Review timestamp in Unix epoch format. |
+| `verified_purchase` | `boolean` | Indicates whether the purchase was verified. |
+| `helpful_vote` | `integer` | Number of helpful votes received by the review. |
 
-### 2. Item Metadata Data Fields
-| Field | Type | Explanation |
+### Product Metadata Fields
+
+| Field | Type | Description |
 | :--- | :--- | :--- |
-| `main_category` | `str` | Main category/domain of the product. |
-| `title` | `str` | Name of the product. |
-| `average_rating` | `float` | Rating shown on the product page. |
-| `rating_number` | `int` | Number of ratings. |
-| `features` | `list` | Bullet-point features of the product. |
-| `description` | `list` | Description of the product. |
-| `price` | `float` | Price in USD at the time of crawling. |
-| `images` | `list` | Product images (`thumb`, `large`, `hi_res`). |
-| `videos` | `list` | Product videos including title and URL. |
-| `store` | `str` | Store name of the product. |
-| `categories` | `list` | Hierarchical categories of the product. |
-| `details` | `dict` | Details including materials, brand, sizes, etc. |
-| `parent_asin` | `str` | Parent ID of the product. |
-| `bought_together` | `list` | Recommended bundles from the website. |
+| `main_category` | `string` | Primary product category. |
+| `title` | `string` | Product title. |
+| `average_rating` | `float` | Average rating displayed for the product. |
+| `rating_number` | `integer` | Number of ratings associated with the product. |
+| `features` | `array` | Product bullet-point features. |
+| `description` | `array` | Product description content. |
+| `price` | `float` | Product price in USD when available. |
+| `images` | `array` | Product image information. |
+| `videos` | `array` | Product video titles and URLs. |
+| `store` | `string` | Store or seller name. |
+| `categories` | `array` | Product category hierarchy. |
+| `details` | `map/struct` | Additional product attributes such as brand, material, or size. |
+| `parent_asin` | `string` | Parent product identifier. |
+| `bought_together` | `array` | Recommended product bundles when available. |
 
----
-## Highlights of PySpark in this Project
-* **Distributed Computing Power:** PySpark enables seamless, high-speed processing of massive, multi-gigabyte datasets across distributed clusters using in-memory computing
-* **Unified API:** It provides a flexible Python API that combines the simplicity of Python data analysis with the scalability of Apache Spark.
-* **Rich DataFrame Ecosystem:** Offers structured PySpark DataFrames that support intuitive, SQL-like data manipulation, filtering, and complex joins.
-* **Scalable Data Ingestion:** Easily reads, parses, and converts unstructured or semi-structured data formats like JSON/JSONL into flattened tables.
-* **Hadoop Integration:** Seamlessly integrates with HDFS storage systems for reliable, fault-tolerant, and localized big data analysis
-you can find the usage of pyspark in the pptx file and aswell as in the code file .
-## Using HDFS for Storage
+## Key Analytics and Insights
 
-HDFS (Hadoop Distributed File System) serves as the primary distributed storage system for large-scale data processing, offering:
-* **Distributed Storage**
-* **Large File Optimization**
-* **Data Locality**
-* **Fault Tolerance & Reliability**
+The pipeline can be used to generate insights such as:
 
-### Commands Used for Ingestion:
+1. Which product categories receive the highest volume of reviews?
+2. Which products have the highest average ratings after applying a minimum-review threshold?
+3. How do ratings and review activity change from year to year?
+4. Do verified purchases have different rating or helpful-vote patterns?
+5. Which products receive the most helpful votes?
+6. Which stores or categories have the strongest review performance?
+7. How do product price and review activity relate to one another?
+8. Which products have substantial review activity and long-term visibility?
+
+To avoid misleading conclusions, rankings should use appropriate thresholds. For example, a product with one five-star review should not automatically be considered better than a product with thousands of consistently positive reviews.
+
+## HDFS Storage and Ingestion
+
+HDFS is used as the distributed storage layer for large input and output files. It provides scalability, data locality, and fault tolerance across a Hadoop cluster.
+
+### HDFS Benefits
+
+- **Distributed storage:** Files are split into blocks and distributed across cluster nodes.
+- **Fault tolerance:** Replication helps protect data from node failures.
+- **Scalability:** Storage capacity can grow by adding nodes.
+- **Data locality:** Processing can occur close to where the data is stored.
+- **Large-file support:** HDFS is optimized for high-throughput batch workloads.
+
+### Example Ingestion Commands
+
+The exact paths and user names should be adjusted for the local Hadoop environment.
+
 ```bash
-sudo su – hadoop
+# Switch to the Hadoop user and start Hadoop services
+sudo su - hadoop
 start-all.sh
 
-# Copy dataset and create target HDFS directory
-sudo cp home/documents/amazon_reviews.json ./
-hdfs dfs -mkdir -p /user/hadoop/raw_data/
-hdfs dfs -put amazon_reviews.json /user/hadoop/raw_data/
+# Create HDFS directories
+hdfs dfs -mkdir -p /user/hadoop/raw_data/reviews
+hdfs dfs -mkdir -p /user/hadoop/raw_data/metadata
 
-# Store file into HDFS with custom block size and replication factor
-hdfs dfs -D dfs.replication=1 -D dfs.block.size=1073741824 -put /home/hadoop_user/amazon_reviews.json /raw/amazon_data/
+# Upload source files to HDFS
+hdfs dfs -put /home/hadoop_user/amazon_reviews.json /user/hadoop/raw_data/reviews/
+hdfs dfs -put /home/hadoop_user/amazon_metadata.json /user/hadoop/raw_data/metadata/
 
+# List files and verify the upload
+hdfs dfs -ls -R /user/hadoop/raw_data
 
+# Optional: upload with explicit replication and block-size settings
+hdfs dfs -D dfs.replication=1 \
+  -D dfs.block.size=1073741824 \
+  -put /home/hadoop_user/amazon_reviews.json /user/hadoop/raw_data/reviews/
+```
 
----
+> In a production or multi-node cluster, use the replication factor configured by the Hadoop administrator. A replication factor of `1` is generally appropriate only for local development or a single-node demonstration environment.
 
+## PySpark Processing Workflow
 
+A typical PySpark job follows these stages:
+
+1. Create a `SparkSession` configured for local or cluster execution.
+2. Read review and metadata files from HDFS.
+3. Apply explicit or inferred schemas.
+4. Clean null values, malformed records, duplicates, and invalid ratings.
+5. Convert timestamps into date and time dimensions.
+6. Flatten nested fields when required for analysis.
+7. Join review records with product metadata on `parent_asin`.
+8. Create Silver-layer datasets in a columnar format such as Parquet.
+9. Aggregate metrics into Gold-layer datasets.
+10. Write results to HDFS for reporting and visualization.
+
+Example PySpark pattern:
+
+```python
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, from_unixtime, year
+
+spark = (
+    SparkSession.builder
+    .appName("AmazonReviewAnalysis")
+    .getOrCreate()
+)
+
+reviews = spark.read.json("hdfs:///user/hadoop/raw_data/reviews/")
+metadata = spark.read.json("hdfs:///user/hadoop/raw_data/metadata/")
+
+silver_reviews = (
+    reviews
+    .withColumn("review_date", from_unixtime(col("timestamp")).cast("date"))
+    .withColumn("review_year", year(col("review_date")))
+    .filter(col("rating").between(1.0, 5.0))
+    .dropDuplicates(["user_id", "parent_asin", "timestamp", "text"])
+)
+
+silver_reviews.write.mode("overwrite").parquet(
+    "hdfs:///user/hadoop/silver/reviews_cleaned/"
+)
+
+spark.stop()
+```
+
+## Data Quality Practices
+
+The pipeline should validate data before creating analytical outputs:
+
+- Confirm that ratings are between 1.0 and 5.0.
+- Check that `parent_asin` is present when a metadata join is required.
+- Standardize missing text, category, price, and store values.
+- Remove exact duplicate review records where appropriate.
+- Validate timestamp ranges and derive calendar fields consistently.
+- Apply minimum review-count thresholds to product rankings.
+- Record unmatched review and metadata records after joins.
+- Preserve raw Bronze data so transformations can be reproduced.
+
+## Output Format and Performance Considerations
+
+For repeated analytics, curated Silver and Gold datasets can be stored in **Parquet** rather than JSON. Parquet provides schema information, columnar storage, compression, and more efficient column-based reads.
+
+Recommended optimization techniques include:
+
+- Partitioning time-series outputs by `review_year` or `review_date`.
+- Selecting only the columns needed for each transformation.
+- Persisting reused DataFrames when beneficial.
+- Broadcasting small lookup datasets where appropriate.
+- Avoiding unnecessary `collect()` operations on large DataFrames.
+- Repartitioning carefully before large joins and aggregations.
+- Using Spark UI to inspect stages, shuffles, and execution plans.
+
+## Repository Contents
+
+The repository contains project implementation materials, including the data-processing code and presentation/documentation artifacts. The code and presentation demonstrate the use of PySpark, HDFS, data transformation, and analytical reporting.
+
+File names may vary as the project evolves. Refer to the repository tree for the latest notebooks, scripts, presentations, and supporting files.
+
+## Limitations
+
+- The dataset is a snapshot and may not represent current Amazon inventory, prices, or review activity.
+- Review activity is not the same as product sales or revenue.
+- Product prices may be missing or reflect only the time of metadata collection.
+- A product's average rating can be affected by review volume, product variations, and sampling.
+- Large files require sufficient local disk space, memory, and Hadoop/Spark configuration.
+- Some nested fields may require additional normalization before analysis.
+
+## Future Enhancements
+
+- Add automated Bronze-to-Silver-to-Gold orchestration with Airflow or another scheduler.
+- Add data-quality checks using Great Expectations or custom validation jobs.
+- Build dashboards using Power BI, Tableau, or Apache Superset.
+- Add sentiment analysis and topic modeling for review text.
+- Use Delta Lake or Apache Iceberg for ACID transactions and schema evolution.
+- Add incremental ingestion and partition-aware processing.
+- Implement product recommendation or rating-prediction models.
+- Add automated tests for schemas, transformations, and output quality.
+
+## Conclusion
+
+This project demonstrates an end-to-end approach for analyzing large-scale customer feedback with distributed technologies. By combining HDFS for storage, PySpark for processing, and the Medallion Architecture for data organization, the solution creates a reliable path from raw Amazon data to clean, reusable, and analytically valuable datasets.
